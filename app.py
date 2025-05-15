@@ -13,6 +13,24 @@ import hmac
 import json
 from celery import Celery
 import tempfile
+import redis
+import uuid
+from celery.result import AsyncResult
+from werkzeug.utils import secure_filename
+import threading
+import time
+import pandas as pd
+import random
+import urllib.parse
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
+from webdriver_manager.chrome import ChromeDriverManager
+import platform
+import sys
 
 # Load environment variables
 load_dotenv()
@@ -48,6 +66,9 @@ migrate = Migrate(app, db)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+# Redis setup for progress/logs
+redis_client = redis.StrictRedis.from_url(os.environ.get('REDIS_URL', 'redis://localhost:6379/0'))
 
 # Models
 class User(UserMixin, db.Model):
@@ -167,19 +188,263 @@ def process_scraping_job(job_id):
         return
     
     try:
-        # TODO: Implement actual scraping logic here
-        # For now, just simulate a delay
-        import time
-        time.sleep(5)
-        
-        job.status = 'completed'
-        job.completed_at = datetime.utcnow()
-        job.result = '{"status": "success", "data": "Sample data"}'
+        # Initialize Chrome driver
+        options = webdriver.ChromeOptions()
+        if sys.platform == 'darwin' and platform.machine() == 'arm64':
+            options.binary_location = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+            driver = webdriver.Chrome(options=options)
+        else:
+            driver_path = ChromeDriverManager().install()
+            service = Service(driver_path)
+            driver = webdriver.Chrome(service=service, options=options)
+
+        # Get template content
+        template = Template.query.get(job.template_id)
+        if not template:
+            raise ValueError("Template not found")
+
+        # Parse template content
+        template_config = json.loads(template.content)
+
+        # Start scraping process
+        base_url = job.url
+        driver.get(base_url)
+        time.sleep(5)  # Wait for page load
+
+        # Get total pages
+        try:
+            page_links = driver.find_elements(By.CSS_SELECTOR, "a.page-link[data-page]")
+            total_pages = max([int(link.get_attribute("data-page")) for link in page_links])
+        except Exception as e:
+            total_pages = 1
+
+        # Initialize results
+        results = []
+        processed_links = set()
+
+        # Process each page
+        for page in range(1, total_pages + 1):
+            if page > 1:
+                page_url = f"{base_url}&page={page}"
+                driver.get(page_url)
+                time.sleep(5)
+
+            # Get listing links
+            links = [e.get_attribute('href') for e in driver.find_elements(By.CSS_SELECTOR, 'a[href*="/app/portfoy/detay/"]')]
+            unique_links = [l for l in links if l not in processed_links]
+
+            # Process each listing
+            for href in unique_links:
+                processed_links.add(href)
+                try:
+                    driver.get(href)
+                    WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, 'p.description'))
+                    )
+
+                    # Extract data based on template configuration
+                    data = {}
+                    for field, selector in template_config.items():
+                        try:
+                            data[field] = driver.find_element(By.CSS_SELECTOR, selector).text.strip()
+                        except:
+                            data[field] = ''
+
+                    # Add listing URL
+                    data['Ilan Linki'] = href
+
+                    results.append(data)
+                except Exception as e:
+                    continue
+
+        # Save results
+        if results:
+            df = pd.DataFrame(results)
+            output_path = f"results/job_{job_id}.csv"
+            os.makedirs("results", exist_ok=True)
+            df.to_csv(output_path, index=False, encoding='utf-8-sig')
+            
+            job.status = 'completed'
+            job.completed_at = datetime.utcnow()
+            job.result = output_path
+        else:
+            job.status = 'failed'
+            job.result = 'No data found'
+
         db.session.commit()
+
     except Exception as e:
         job.status = 'failed'
         job.result = str(e)
         db.session.commit()
+    finally:
+        if driver:
+            try:
+                driver.quit()
+            except:
+                pass
+
+# WhatsApp Bot Celery Task
+@celery.task(bind=True)
+def whatsapp_bot_task(self, user_id, csv_path, test_mode, test_phone, selected_templates, custom_template):
+    import time
+    import pandas as pd
+    import random
+    import urllib.parse
+    from selenium import webdriver
+    from selenium.webdriver.chrome.service import Service
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.webdriver.common.keys import Keys
+    from webdriver_manager.chrome import ChromeDriverManager
+    import platform
+    import sys
+    import os
+
+    MESSAGE_TEMPLATES = {
+        "SATILIK": {
+            "template1": "Merhaba, ilanınız *\"{title}\"* satışa sunduğunuz bu mülk için alıcı portföyümüze eklenebilir. Süreci hızlandırmak isterseniz yardımcı olabilirim.",
+            "template2": "Merhaba, *\"{title}\"* ilanınızı inceledim. Mülkünüz için potansiyel alıcılarımız mevcut. Satış sürecinizi hızlandırmak için görüşmek ister misiniz?",
+            "template3": "Merhaba, *\"{title}\"* ilanınız dikkatimi çekti. Benzer özellikteki mülkler için aktif alıcılarımız var. Satış sürecinizde size nasıl yardımcı olabilirim?"
+        },
+        "KIRALIK": {
+            "template1": "Merhaba, ilanınız *\"{title}\"* kiralık mülklerim arasında dikkatimi çekti. Kiralama sürecini hızlıca yönetmek ister misiniz?",
+            "template2": "Merhaba, *\"{title}\"* ilanınızı gördüm. Kiralık mülk arayan müşterilerimiz mevcut. Kiracı bulma sürecinizde size yardımcı olabilirim.",
+            "template3": "Merhaba, *\"{title}\"* ilanınız için potansiyel kiracılarımız var. Kiralama sürecinizi hızlandırmak için görüşmek ister misiniz?"
+        }
+    }
+    DEFAULT_TEMPLATE = "Merhaba, ilanınız *\"{title}\"* hakkında bilgi vermek isterim."
+    DELAY_BETWEEN_MESSAGES = 5
+
+    task_id = self.request.id
+    progress_key = f"wa_progress:{task_id}"
+    log_key = f"wa_log:{task_id}"
+    state_key = f"wa_state:{task_id}"
+    result_csv = f"whatsapp_results_{task_id}.csv"
+    redis_client.set(progress_key, 0)
+    redis_client.delete(log_key)
+    redis_client.set(state_key, "waiting_login")
+
+    def log(msg):
+        redis_client.rpush(log_key, msg)
+
+    driver = None
+    try:
+        log("Başlatılıyor...")
+        if test_mode and test_phone:
+            log(f"🧪 Test modu aktif: Mesajlar {test_phone} numarasına gidecek")
+            test_phone = test_phone.replace("+", "").replace(" ", "")
+        else:
+            log("⚠️ Test modu kapalı: Gerçek numaralara mesaj gönderilecek")
+
+        # Start WebDriver
+        options = webdriver.ChromeOptions()
+        try:
+            if sys.platform == 'darwin' and platform.machine() == 'arm64':
+                options.binary_location = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+                driver = webdriver.Chrome(options=options)
+            else:
+                driver_path = ChromeDriverManager().install()
+                service = Service(driver_path)
+                driver = webdriver.Chrome(service=service, options=options)
+            log("✅ ChromeDriver başarıyla başlatıldı.")
+        except Exception as e:
+            log(f"ChromeDriver başlatılamadı: {e}")
+            driver = webdriver.Chrome(options=options)
+
+        # Open WhatsApp Web and wait for login
+        driver.get("https://web.whatsapp.com")
+        log("❗ Lütfen WhatsApp Web'e QR kod ile giriş yapın ve web arayüzünden 'Devam Et' butonuna tıklayın...")
+        redis_client.set(state_key, "waiting_login")
+        # Wait for manual confirmation from frontend
+        while redis_client.get(state_key).decode() == "waiting_login":
+            time.sleep(1)
+        log("✅ Giriş onaylandı, mesaj gönderimine başlanıyor...")
+        redis_client.set(state_key, "running")
+
+        # Load CSV
+        if not os.path.exists(csv_path):
+            log(f"CSV dosyası bulunamadı: {csv_path}")
+            redis_client.set(state_key, "failed")
+            return
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            first_line = f.readline().strip()
+            delimiter = ',' if ',' in first_line else ';' if ';' in first_line else '\t'
+        df = pd.read_csv(csv_path, encoding='utf-8', sep=delimiter, on_bad_lines='skip')
+        # Standardize columns
+        required_columns = {
+            'Telefon': ['Telefon', 'telefon', 'PHONE', 'phone'],
+            'Ilan Basligi': ['Ilan Basligi', 'İlan Başlığı', 'ILAN BASLIGI', 'ilan_basligi'],
+            'IslemTipi': ['IslemTipi', 'İşlem Tipi', 'ISLEMTIPI', 'islem_tipi']
+        }
+        for standard_name, possible_names in required_columns.items():
+            found = False
+            for col in df.columns:
+                if col in possible_names:
+                    df = df.rename(columns={col: standard_name})
+                    found = True
+                    break
+            if not found:
+                log(f"CSV dosyasında gerekli sütun bulunamadı: {standard_name}")
+                redis_client.set(state_key, "failed")
+                return
+        df_unique = df.drop_duplicates(subset=["Telefon"]).reset_index(drop=True)
+        log(f"📊 Toplam {len(df_unique)} benzersiz telefon numarası bulundu")
+
+        # Send messages
+        sent_rows = []
+        for idx, row in df_unique.iterrows():
+            if redis_client.get(state_key).decode() == "stopped":
+                log("Kullanıcı tarafından durduruldu.")
+                break
+            phone = test_phone if test_mode else row["Telefon"].replace("+", "").replace(" ", "")
+            title = row.get("Ilan Basligi", "").strip()
+            islem = row.get("IslemTipi", "").strip().upper()
+            if selected_templates and islem in selected_templates:
+                templates = selected_templates[islem]
+                if templates:
+                    if "custom" in templates and custom_template:
+                        template = custom_template
+                    else:
+                        template_key = random.choice(templates)
+                        template = MESSAGE_TEMPLATES[islem][template_key]
+                else:
+                    template = DEFAULT_TEMPLATE
+            else:
+                template = DEFAULT_TEMPLATE
+            message = template.format(title=title)
+            encoded_msg = urllib.parse.quote_plus(message)
+            url = f"https://web.whatsapp.com/send?phone={phone}&text={encoded_msg}"
+            driver.get(url)
+            try:
+                input_box = WebDriverWait(driver, 20).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, 'div[contenteditable="true"][data-tab="10"]'))
+                )
+                input_box.click()
+                time.sleep(0.5)
+                input_box.send_keys(Keys.ENTER)
+                time.sleep(1)
+                log(f"✅ Mesaj gönderildi: {phone}")
+                sent_rows.append(row)
+            except Exception as e:
+                log(f"❌ Mesaj gönderilemedi: {phone} - {e}")
+            redis_client.set(progress_key, int((idx+1)/len(df_unique)*100))
+            time.sleep(DELAY_BETWEEN_MESSAGES)
+        # Save results
+        pd.DataFrame(sent_rows).to_csv(result_csv, index=False)
+        redis_client.set(state_key, "completed")
+        log(f"✅ Tüm mesajlar işlendi. Sonuçlar indirilebilir.")
+        redis_client.set(f"wa_result:{task_id}", result_csv)
+    except Exception as e:
+        log(f"Beklenmeyen hata: {str(e)}")
+        redis_client.set(state_key, "failed")
+    finally:
+        if driver:
+            try:
+                driver.quit()
+            except:
+                pass
 
 # Routes
 @app.route('/')
@@ -333,7 +598,9 @@ def scrape():
     # Get request data
     url = request.form.get('url')
     template_id = request.form.get('template')
-    output_format = request.form.get('output_format')
+    
+    if not url or not template_id:
+        return jsonify({'error': 'URL and template are required'}), 400
     
     # Validate template access
     template = Template.query.get(template_id)
@@ -342,10 +609,6 @@ def scrape():
     
     if template.is_premium and current_user.subscription_tier == 'free':
         return jsonify({'error': 'Premium template not available in free tier'}), 403
-    
-    # Validate output format
-    if output_format not in limits['export_formats']:
-        return jsonify({'error': 'Output format not available in your plan'}), 403
     
     # Create new scraping job
     job = ScrapingJob(
@@ -359,7 +622,11 @@ def scrape():
     # Start scraping process asynchronously
     process_scraping_job.delay(job.id)
     
-    return jsonify({'job_id': job.id})
+    return jsonify({
+        'job_id': job.id,
+        'status': 'started',
+        'message': 'Scraping job started successfully'
+    })
 
 @app.route('/api/job/<int:job_id>')
 @login_required
@@ -374,6 +641,18 @@ def get_job_status(job_id):
         'completed_at': job.completed_at.isoformat() if job.completed_at else None,
         'result': job.result
     })
+
+@app.route('/api/job/<int:job_id>/download')
+@login_required
+def download_job_results(job_id):
+    job = ScrapingJob.query.get_or_404(job_id)
+    if job.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    if job.status != 'completed' or not job.result:
+        return jsonify({'error': 'No results available'}), 404
+    
+    return send_file(job.result, as_attachment=True, download_name=f'job_{job_id}_results.csv')
 
 @app.route('/dashboard/upgrade')
 @login_required
@@ -451,7 +730,25 @@ def templates_page():
 @app.before_first_request
 def ensure_sample_template():
     if Template.query.count() == 0:
-        t = Template(name="Basic Example", description="Example template", content="{}", is_premium=False)
+        # Create default scraping template
+        default_template = {
+            'Ilan Basligi': 'p.description',
+            'IslemTipi': '.type-container span:nth-child(1)',
+            'Cinsi': '.type-container .type',
+            'Turu': 'div.col-md-7.col-6.text-right:not(.ad-owner)',
+            'Bolge': '.pr-features-right',
+            'IlanSahibi': 'div.ad-owner',
+            'Fiyat': 'div.price-container',
+            'IlanTarihi': 'div.col-md-7.col-8.text-right',
+            'Telefon': 'a[href^="tel:"]'
+        }
+        
+        t = Template(
+            name="Default Scraping Template",
+            description="Default template for scraping property listings",
+            content=json.dumps(default_template),
+            is_premium=False
+        )
         db.session.add(t)
         db.session.commit()
 
@@ -532,6 +829,59 @@ def scrape_revy():
     finally:
         if driver:
             driver.quit()
+
+# API: Start WhatsApp Bot
+@app.route('/api/whatsapp-bot', methods=['POST'])
+@login_required
+def start_whatsapp_bot():
+    # Handle file upload
+    if 'csv_file' not in request.files:
+        return jsonify({'error': 'CSV file required'}), 400
+    file = request.files['csv_file']
+    filename = secure_filename(file.filename)
+    csv_path = os.path.join('uploads', f"{uuid.uuid4()}_{filename}")
+    os.makedirs('uploads', exist_ok=True)
+    file.save(csv_path)
+    # Parse other params
+    test_mode = request.form.get('test_mode', 'false') == 'true'
+    test_phone = request.form.get('test_phone', '')
+    selected_templates = request.form.get('selected_templates')
+    custom_template = request.form.get('custom_template')
+    # selected_templates should be a JSON string
+    import json
+    if selected_templates:
+        selected_templates = json.loads(selected_templates)
+    # Start task
+    task = whatsapp_bot_task.apply_async(args=[current_user.id, csv_path, test_mode, test_phone, selected_templates, custom_template])
+    return jsonify({'task_id': task.id})
+
+# API: Poll WhatsApp Bot Progress
+@app.route('/api/whatsapp-bot/progress/<task_id>')
+@login_required
+def whatsapp_bot_progress(task_id):
+    progress = int(redis_client.get(f"wa_progress:{task_id}") or 0)
+    logs = redis_client.lrange(f"wa_log:{task_id}", 0, -1)
+    logs = [l.decode() for l in logs]
+    state = redis_client.get(f"wa_state:{task_id}")
+    state = state.decode() if state else 'unknown'
+    return jsonify({'progress': progress, 'logs': logs, 'state': state})
+
+# API: Continue after login
+@app.route('/api/whatsapp-bot/continue/<task_id>', methods=['POST'])
+@login_required
+def whatsapp_bot_continue(task_id):
+    redis_client.set(f"wa_state:{task_id}", "continue")
+    return jsonify({'status': 'ok'})
+
+# API: Download result CSV
+@app.route('/api/whatsapp-bot/result/<task_id>')
+@login_required
+def whatsapp_bot_result(task_id):
+    result_csv = redis_client.get(f"wa_result:{task_id}")
+    if not result_csv:
+        return jsonify({'error': 'No result'}), 404
+    result_csv = result_csv.decode()
+    return send_file(result_csv, as_attachment=True)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True) 
