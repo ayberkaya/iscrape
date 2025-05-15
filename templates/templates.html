@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Templates - iScrape</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-between h-16">
+          <div class="flex">
+            <div class="flex-shrink-0 flex items-center">
+              <a href="/" class="text-2xl font-bold text-indigo-600">iScrape</a>
+            </div>
+            <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+              <a
+                href="/dashboard"
+                class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                >Dashboard</a
+              >
+              <a
+                href="/dashboard/jobs"
+                class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                >Jobs</a
+              >
+              <a
+                href="/dashboard/templates"
+                class="border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                >Templates</a
+              >
+              <a
+                href="/dashboard/settings"
+                class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                >Settings</a
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto py-10">
+      <h1 class="text-3xl font-bold mb-6">Templates</h1>
+      <div class="bg-white shadow rounded-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">Add New Template</h2>
+        <form method="POST" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Name</label>
+            <input
+              type="text"
+              name="name"
+              required
+              class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700"
+              >Description</label
+            >
+            <input
+              type="text"
+              name="description"
+              class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700"
+              >Content (JSON)</label
+            >
+            <textarea
+              name="content"
+              required
+              class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2"
+              rows="3"
+            >
+{}</textarea
+            >
+          </div>
+          <div class="flex items-center">
+            <input
+              id="is_premium"
+              name="is_premium"
+              type="checkbox"
+              class="h-4 w-4 text-indigo-600 border-gray-300 rounded"
+            />
+            <label for="is_premium" class="ml-2 block text-sm text-gray-900"
+              >Premium Template</label
+            >
+          </div>
+          <button
+            type="submit"
+            class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+          >
+            Add Template
+          </button>
+        </form>
+      </div>
+      <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Existing Templates</h2>
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                ID
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Name
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Description
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Premium
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Created
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for template in templates %}
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {{ template.id }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {{ template.name }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ template.description }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                {% if template.is_premium %}<span
+                  class="text-indigo-600 font-bold"
+                  >Yes</span
+                >{% else %}No{% endif %}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ template.created_at.strftime('%Y-%m-%d') }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register - iScrape</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://js.stripe.com/v3/"></script>
+  </head>
+  <body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-between h-16">
+          <div class="flex">
+            <div class="flex-shrink-0 flex items-center">
+              <a href="/" class="text-2xl font-bold text-indigo-600">iScrape</a>
+            </div>
+          </div>
+          <div class="flex items-center">
+            <a
+              href="/pricing"
+              class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+              >Pricing</a
+            >
+            <a
+              href="/login"
+              class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+              >Login</a
+            >
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Registration Form -->
+    <div
+      class="min-h-screen py-12 flex flex-col justify-center sm:px-6 lg:px-8"
+    >
+      <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Create your account
+        </h2>
+        <p class="mt-2 text-center text-sm text-gray-600">
+          Or
+          <a
+            href="/login"
+            class="font-medium text-indigo-600 hover:text-indigo-500"
+          >
+            sign in to your existing account
+          </a>
+        </p>
+      </div>
+
+      <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <form
+            class="space-y-6"
+            action="/register"
+            method="POST"
+            id="registration-form"
+          >
+            <div>
+              <label
+                for="email"
+                class="block text-sm font-medium text-gray-700"
+              >
+                Email address
+              </label>
+              <div class="mt-1">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  required
+                  class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                for="password"
+                class="block text-sm font-medium text-gray-700"
+              >
+                Password
+              </label>
+              <div class="mt-1">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                  class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                for="confirm_password"
+                class="block text-sm font-medium text-gray-700"
+              >
+                Confirm password
+              </label>
+              <div class="mt-1">
+                <input
+                  id="confirm_password"
+                  name="confirm_password"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                  class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label for="plan" class="block text-sm font-medium text-gray-700">
+                Select your plan
+              </label>
+              <div class="mt-1">
+                <select
+                  id="plan"
+                  name="plan"
+                  required
+                  class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                >
+                  <option value="free">Free</option>
+                  <option value="pro">Pro ($29.99/month)</option>
+                  <option value="enterprise">Enterprise ($99.99/month)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Payment Section (shown only for paid plans) -->
+            <div id="payment-section" class="hidden">
+              <div class="mt-6">
+                <label
+                  for="card-element"
+                  class="block text-sm font-medium text-gray-700"
+                >
+                  Credit or debit card
+                </label>
+                <div class="mt-1">
+                  <div
+                    id="card-element"
+                    class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  ></div>
+                  <div
+                    id="card-errors"
+                    class="mt-2 text-sm text-red-600"
+                    role="alert"
+                  ></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Create account
+              </button>
+            </div>
+          </form>
+
+          <div class="mt-6">
+            <div class="relative">
+              <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t border-gray-300"></div>
+              </div>
+              <div class="relative flex justify-center text-sm">
+                <span class="px-2 bg-white text-gray-500">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            <div class="mt-6 grid grid-cols-3 gap-3">
+              <div>
+                <a
+                  href="#"
+                  class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                >
+                  <i class="fab fa-google"></i>
+                </a>
+              </div>
+              <div>
+                <a
+                  href="#"
+                  class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                >
+                  <i class="fab fa-github"></i>
+                </a>
+              </div>
+              <div>
+                <a
+                  href="#"
+                  class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                >
+                  <i class="fab fa-linkedin"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Initialize Stripe
+      const stripe = Stripe("{{ stripe_public_key }}");
+      const elements = stripe.elements();
+      const card = elements.create("card");
+      card.mount("#card-element");
+
+      // Handle form submission
+      const form = document.getElementById("registration-form");
+      const planSelect = document.getElementById("plan");
+      const paymentSection = document.getElementById("payment-section");
+
+      // Show/hide payment section based on plan selection
+      planSelect.addEventListener("change", function () {
+        if (this.value === "free") {
+          paymentSection.classList.add("hidden");
+        } else {
+          paymentSection.classList.remove("hidden");
+        }
+      });
+
+      // Handle form submission
+      form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        if (planSelect.value !== "free") {
+          const { token, error } = await stripe.createToken(card);
+
+          if (error) {
+            const errorElement = document.getElementById("card-errors");
+            errorElement.textContent = error.message;
+          } else {
+            // Add token to form
+            const hiddenInput = document.createElement("input");
+            hiddenInput.setAttribute("type", "hidden");
+            hiddenInput.setAttribute("name", "stripeToken");
+            hiddenInput.setAttribute("value", token.id);
+            form.appendChild(hiddenInput);
+          }
+        }
+
+        form.submit();
+      });
+    </script>
+  </body>
+</html>

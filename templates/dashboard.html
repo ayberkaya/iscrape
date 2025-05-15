@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - iScrape</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-between h-16">
+          <div class="flex">
+            <div class="flex-shrink-0 flex items-center">
+              <a href="/" class="text-2xl font-bold text-indigo-600">iScrape</a>
+            </div>
+            <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+              <a
+                href="/dashboard"
+                class="border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+              >
+                Dashboard
+              </a>
+              <a
+                href="/dashboard/jobs"
+                class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+              >
+                Jobs
+              </a>
+              <a
+                href="/dashboard/templates"
+                class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+              >
+                Templates
+              </a>
+              <a
+                href="/dashboard/settings"
+                class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+              >
+                Settings
+              </a>
+            </div>
+          </div>
+          <div class="flex items-center">
+            <div class="ml-3 relative">
+              <div>
+                <button
+                  type="button"
+                  class="bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  id="user-menu-button"
+                >
+                  <span class="sr-only">Open user menu</span>
+                  <img
+                    class="h-8 w-8 rounded-full"
+                    src="https://ui-avatars.com/api/?name={{ current_user.email }}"
+                    alt=""
+                  />
+                </button>
+              </div>
+              <div
+                class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+                role="menu"
+                id="user-menu"
+              >
+                <a
+                  href="/dashboard/profile"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  role="menuitem"
+                  >Your Profile</a
+                >
+                <a
+                  href="/dashboard/settings"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  role="menuitem"
+                  >Settings</a
+                >
+                <a
+                  href="/logout"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  role="menuitem"
+                  >Sign out</a
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="py-10">
+      <header>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h1 class="text-3xl font-bold leading-tight text-gray-900">
+            Dashboard
+          </h1>
+        </div>
+      </header>
+      <main>
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+          <!-- Subscription Status -->
+          <div class="bg-white shadow sm:rounded-lg mb-6">
+            <div class="px-4 py-5 sm:p-6">
+              <h3 class="text-lg leading-6 font-medium text-gray-900">
+                Subscription Status
+              </h3>
+              <div class="mt-2 max-w-xl text-sm text-gray-500">
+                <p>
+                  Current Plan:
+                  <span class="font-medium text-indigo-600"
+                    >{{ current_user.subscription_tier }}</span
+                  >
+                </p>
+                <p>
+                  Status:
+                  <span class="font-medium text-green-600"
+                    >{{ current_user.subscription_status }}</span
+                  >
+                </p>
+                {% if current_user.subscription_end %}
+                <p>
+                  Renews: {{ current_user.subscription_end.strftime('%B %d, %Y')
+                  }}
+                </p>
+                {% endif %}
+              </div>
+              <div class="mt-5">
+                <a
+                  href="/dashboard/upgrade"
+                  class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Upgrade Plan
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Usage Stats -->
+          <div class="bg-white shadow sm:rounded-lg mb-6">
+            <div class="px-4 py-5 sm:p-6">
+              <h3 class="text-lg leading-6 font-medium text-gray-900">
+                Usage Statistics
+              </h3>
+              <div class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                  <div class="px-4 py-5 sm:p-6">
+                    <dt class="text-sm font-medium text-gray-500 truncate">
+                      Daily Jobs
+                    </dt>
+                    <dd class="mt-1 text-3xl font-semibold text-gray-900">
+                      {{ daily_jobs }}/{{ daily_limit }}
+                    </dd>
+                  </div>
+                </div>
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                  <div class="px-4 py-5 sm:p-6">
+                    <dt class="text-sm font-medium text-gray-500 truncate">
+                      Total Jobs
+                    </dt>
+                    <dd class="mt-1 text-3xl font-semibold text-gray-900">
+                      {{ total_jobs }}
+                    </dd>
+                  </div>
+                </div>
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                  <div class="px-4 py-5 sm:p-6">
+                    <dt class="text-sm font-medium text-gray-500 truncate">
+                      Success Rate
+                    </dt>
+                    <dd class="mt-1 text-3xl font-semibold text-gray-900">
+                      {{ success_rate }}%
+                    </dd>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- New Scraping Job -->
+          <div class="bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+              <h3 class="text-lg leading-6 font-medium text-gray-900">
+                New Scraping Job
+              </h3>
+              <div class="mt-2 max-w-xl text-sm text-gray-500">
+                <p>
+                  Start a new scraping job by entering the URL and selecting a
+                  template.
+                </p>
+              </div>
+              <form class="mt-5 space-y-6" action="/api/scrape" method="POST">
+                <div>
+                  <label
+                    for="url"
+                    class="block text-sm font-medium text-gray-700"
+                  >
+                    Target URL
+                  </label>
+                  <div class="mt-1">
+                    <input
+                      type="url"
+                      name="url"
+                      id="url"
+                      required
+                      class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    for="template"
+                    class="block text-sm font-medium text-gray-700"
+                  >
+                    Template
+                  </label>
+                  <div class="mt-1">
+                    <select
+                      id="template"
+                      name="template"
+                      required
+                      class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                    >
+                      <option value="">Select a template</option>
+                      {% for template in templates %}
+                      <option value="{{ template.id }}">
+                        {{ template.name }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    for="output_format"
+                    class="block text-sm font-medium text-gray-700"
+                  >
+                    Output Format
+                  </label>
+                  <div class="mt-1">
+                    <select
+                      id="output_format"
+                      name="output_format"
+                      required
+                      class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                    >
+                      <option value="csv">CSV</option>
+                      <option value="json">JSON</option>
+                      <option value="excel">Excel</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <button
+                    type="submit"
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    Start Scraping
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Recent Jobs -->
+          <div class="mt-8">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+              Recent Jobs
+            </h3>
+            <div class="flex flex-col">
+              <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                <div
+                  class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8"
+                >
+                  <div
+                    class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg"
+                  >
+                    <table class="min-w-full divide-y divide-gray-200">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th
+                            scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            ID
+                          </th>
+                          <th
+                            scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            URL
+                          </th>
+                          <th
+                            scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            Status
+                          </th>
+                          <th
+                            scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            Created
+                          </th>
+                          <th scope="col" class="relative px-6 py-3">
+                            <span class="sr-only">Actions</span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody class="bg-white divide-y divide-gray-200">
+                        {% for job in recent_jobs %}
+                        <tr>
+                          <td
+                            class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+                          >
+                            {{ job.id }}
+                          </td>
+                          <td
+                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                          >
+                            {{ job.url }}
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap">
+                            <span
+                              class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if job.status == 'completed' %} bg-green-100 text-green-800 {% elif job.status == 'failed' %} bg-red-100 text-red-800 {% else %} bg-yellow-100 text-yellow-800 {% endif %}"
+                            >
+                              {{ job.status }}
+                            </span>
+                          </td>
+                          <td
+                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                          >
+                            {{ job.created_at.strftime('%Y-%m-%d %H:%M') }}
+                          </td>
+                          <td
+                            class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                          >
+                            <a
+                              href="/dashboard/jobs/{{ job.id }}"
+                              class="text-indigo-600 hover:text-indigo-900"
+                              >View</a
+                            >
+                          </td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      // Toggle user menu
+      const userMenuButton = document.getElementById("user-menu-button");
+      const userMenu = document.getElementById("user-menu");
+
+      userMenuButton.addEventListener("click", () => {
+        userMenu.classList.toggle("hidden");
+      });
+
+      // Close menu when clicking outside
+      document.addEventListener("click", (event) => {
+        if (
+          !userMenuButton.contains(event.target) &&
+          !userMenu.contains(event.target)
+        ) {
+          userMenu.classList.add("hidden");
+        }
+      });
+    </script>
+  </body>
+</html>
