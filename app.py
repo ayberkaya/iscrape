@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_migrate import Migrate
@@ -12,6 +12,7 @@ import requests
 import hmac
 import json
 from celery import Celery
+import tempfile
 
 # Load environment variables
 load_dotenv()
@@ -453,6 +454,84 @@ def ensure_sample_template():
         t = Template(name="Basic Example", description="Example template", content="{}", is_premium=False)
         db.session.add(t)
         db.session.commit()
+
+@app.route('/dashboard/revy', methods=['GET'])
+@login_required
+def revy_dashboard():
+    return render_template('revy_dashboard.html')
+
+@app.route('/api/scrape-revy', methods=['POST'])
+@login_required
+def scrape_revy():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    if not username or not password:
+        return jsonify({'error': 'Kullanıcı adı ve şifre zorunlu!'}), 400
+    
+    from selenium import webdriver
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.chrome.service import Service
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    from webdriver_manager.chrome import ChromeDriverManager
+    import pandas as pd
+    import time
+    import os
+
+    # Geçici dosya oluştur
+    temp = tempfile.NamedTemporaryFile(delete=False, suffix='.csv')
+    csv_path = temp.name
+    temp.close()
+
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    driver = None
+    try:
+        driver_path = ChromeDriverManager().install()
+        service = Service(driver_path)
+        driver = webdriver.Chrome(service=service, options=options)
+        driver.get('https://www.revy.com.tr/login')
+        # Giriş formunu doldur
+        WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.NAME, 'phone')))
+        driver.find_element(By.NAME, 'phone').send_keys(username)
+        driver.find_element(By.NAME, 'password').send_keys(password)
+        driver.find_element(By.CSS_SELECTOR, 'button[type="submit"]').click()
+        # Başarıyla giriş yapıldığını kontrol et
+        WebDriverWait(driver, 20).until(EC.url_contains('/app/portfoy/ilanlar'))
+        # İlanlar sayfasına git
+        driver.get('https://www.revy.com.tr/app/portfoy/ilanlar?export=0&fsbo=true&area=my&advertisement_status=active')
+        time.sleep(5)
+        # İlan linklerini topla
+        links = [e.get_attribute('href') for e in driver.find_elements(By.CSS_SELECTOR, 'a[href*="/app/portfoy/detay/"]')]
+        # Her ilanı işle
+        data = []
+        for href in links:
+            driver.get(href)
+            time.sleep(2)
+            try:
+                title = driver.find_element(By.CSS_SELECTOR, 'p.description').text
+            except:
+                title = ''
+            try:
+                price = driver.find_element(By.CSS_SELECTOR, 'div.price-container').text
+            except:
+                price = ''
+            try:
+                phone = driver.find_element(By.CSS_SELECTOR, 'a[href^="tel:"]').text
+            except:
+                phone = ''
+            data.append({'Başlık': title, 'Fiyat': price, 'Telefon': phone, 'Link': href})
+        # CSV'ye kaydet
+        df = pd.DataFrame(data)
+        df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+        return send_file(csv_path, as_attachment=True, download_name='revy_ilanlar.csv')
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if driver:
+            driver.quit()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True) 
