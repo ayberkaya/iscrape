@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard - iScrape</title>
+    <title>iScrape Dashboard</title>
     <link
       href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
       rel="stylesheet"
@@ -18,462 +18,341 @@
     <nav class="bg-white shadow-lg">
       <div class="max-w-7xl mx-auto px-4">
         <div class="flex justify-between h-16">
-          <div class="flex">
-            <div class="flex-shrink-0 flex items-center">
-              <a href="/" class="text-2xl font-bold text-indigo-600">iScrape</a>
-            </div>
-            <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <a
-                href="/dashboard"
-                class="border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-              >
-                Dashboard
-              </a>
-              <a
-                href="/dashboard/templates"
-                class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-              >
-                Templates
-              </a>
-              <a
-                href="/dashboard/upgrade"
-                class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-              >
-                Upgrade
-              </a>
-            </div>
-          </div>
           <div class="flex items-center">
-            <div class="ml-3 relative">
-              <div>
-                <button
-                  type="button"
-                  class="bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  id="user-menu-button"
-                >
-                  <span class="sr-only">Open user menu</span>
-                  <img
-                    class="h-8 w-8 rounded-full"
-                    src="https://ui-avatars.com/api/?name={{ current_user.email }}"
-                    alt=""
-                  />
-                </button>
-              </div>
-              <div
-                class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
-                role="menu"
-                id="user-menu"
-              >
-                <a
-                  href="/dashboard/profile"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  role="menuitem"
-                  >Your Profile</a
-                >
-                <a
-                  href="/dashboard/settings"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  role="menuitem"
-                  >Settings</a
-                >
-                <a
-                  href="/logout"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  role="menuitem"
-                  >Sign out</a
-                >
-              </div>
-            </div>
+            <a href="/" class="text-2xl font-bold text-indigo-600">iScrape</a>
+          </div>
+          <div class="flex items-center space-x-4">
+            <a href="/dashboard" class="text-indigo-600 font-semibold"
+              >Dashboard</a
+            >
+            <a
+              href="/dashboard/templates"
+              class="text-gray-600 hover:text-indigo-600"
+              >Templates</a
+            >
+            <a
+              href="/dashboard/upgrade"
+              class="text-gray-600 hover:text-indigo-600"
+              >Upgrade</a
+            >
+            <img
+              class="h-8 w-8 rounded-full"
+              src="https://ui-avatars.com/api/?name={{ current_user.email }}"
+              alt=""
+            />
           </div>
         </div>
       </div>
     </nav>
 
     <!-- Main Content -->
-    <div class="py-10">
-      <header>
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 class="text-3xl font-bold leading-tight text-gray-900">
-            Dashboard
-          </h1>
+    <div class="max-w-5xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-lg">
+      <h2 class="text-2xl font-bold mb-4">Scraping Control Panel</h2>
+      <form id="scrape-form" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div>
+          <label for="url" class="block text-sm font-medium text-gray-700"
+            >Target URL</label
+          >
+          <input
+            type="url"
+            name="url"
+            id="url"
+            required
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+          />
         </div>
-      </header>
-      <main>
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-          <!-- Subscription Status -->
-          <div class="bg-white shadow sm:rounded-lg mb-6">
-            <div class="px-4 py-5 sm:p-6">
-              <h3 class="text-lg leading-6 font-medium text-gray-900">
-                Subscription Status
-              </h3>
-              <div class="mt-2 max-w-xl text-sm text-gray-500">
-                <p>
-                  Current Plan:
-                  <span class="font-medium text-indigo-600"
-                    >{{ current_user.subscription_tier }}</span
-                  >
-                </p>
-                <p>
-                  Status:
-                  <span class="font-medium text-green-600"
-                    >{{ current_user.subscription_status }}</span
-                  >
-                </p>
-                {% if current_user.subscription_end %}
-                <p>
-                  Renews: {{ current_user.subscription_end.strftime('%B %d, %Y')
-                  }}
-                </p>
-                {% endif %}
-              </div>
-              <div class="mt-5">
-                <a
-                  href="/dashboard/upgrade"
-                  class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        <div>
+          <label for="template" class="block text-sm font-medium text-gray-700"
+            >Template</label
+          >
+          <select
+            id="template"
+            name="template"
+            required
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="">Select a template</option>
+            {% for template in templates %}
+            <option value="{{ template.id }}">{{ template.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="flex items-end space-x-2">
+          <button
+            type="submit"
+            id="start-btn"
+            class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-semibold flex-1"
+          >
+            <i class="fas fa-play mr-2"></i>Start
+          </button>
+          <button
+            type="button"
+            id="pause-btn"
+            class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 font-semibold flex-1"
+            disabled
+          >
+            <i class="fas fa-pause mr-2"></i>Pause
+          </button>
+          <button
+            type="button"
+            id="stop-btn"
+            class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-semibold flex-1"
+            disabled
+          >
+            <i class="fas fa-stop mr-2"></i>Stop
+          </button>
+        </div>
+      </form>
+      <div class="mb-4">
+        <div class="flex items-center mb-2">
+          <span class="font-semibold mr-2">Job Status:</span>
+          <span id="job-status" class="text-blue-700">Idle</span>
+          <span id="job-error" class="ml-4 text-red-600 font-semibold"></span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-6">
+          <div
+            id="progress-bar"
+            class="bg-indigo-600 h-6 rounded-full text-white text-center font-bold transition-all duration-500"
+            style="width: 0%"
+          >
+            0%
+          </div>
+        </div>
+        <div class="flex space-x-6 mt-2 text-sm">
+          <div>Total Ads: <span id="total-ads">-</span></div>
+          <div>Processed: <span id="processed-ads">-</span></div>
+          <div>Current Page: <span id="current-page">-</span></div>
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="font-semibold">Logs:</label>
+        <pre
+          id="job-logs"
+          class="bg-black text-green-200 p-4 rounded h-64 overflow-y-auto text-xs font-mono"
+        ></pre>
+      </div>
+      <div id="download-section" class="hidden mb-4">
+        <a
+          id="download-link"
+          href="#"
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700"
+        >
+          <i class="fas fa-download mr-2"></i>Download Results
+        </a>
+      </div>
+      <div class="mt-8">
+        <h3 class="text-lg font-bold mb-2">Recent Jobs</h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th
+                  class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  Upgrade Plan
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <!-- Usage Stats -->
-          <div class="bg-white shadow sm:rounded-lg mb-6">
-            <div class="px-4 py-5 sm:p-6">
-              <h3 class="text-lg leading-6 font-medium text-gray-900">
-                Usage Statistics
-              </h3>
-              <div class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
-                <div class="bg-white overflow-hidden shadow rounded-lg">
-                  <div class="px-4 py-5 sm:p-6">
-                    <dt class="text-sm font-medium text-gray-500 truncate">
-                      Daily Jobs
-                    </dt>
-                    <dd class="mt-1 text-3xl font-semibold text-gray-900">
-                      {{ daily_jobs }}/{{ daily_limit }}
-                    </dd>
-                  </div>
-                </div>
-                <div class="bg-white overflow-hidden shadow rounded-lg">
-                  <div class="px-4 py-5 sm:p-6">
-                    <dt class="text-sm font-medium text-gray-500 truncate">
-                      Total Jobs
-                    </dt>
-                    <dd class="mt-1 text-3xl font-semibold text-gray-900">
-                      {{ total_jobs }}
-                    </dd>
-                  </div>
-                </div>
-                <div class="bg-white overflow-hidden shadow rounded-lg">
-                  <div class="px-4 py-5 sm:p-6">
-                    <dt class="text-sm font-medium text-gray-500 truncate">
-                      Success Rate
-                    </dt>
-                    <dd class="mt-1 text-3xl font-semibold text-gray-900">
-                      {{ success_rate }}%
-                    </dd>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- New Scraping Job (AJAX) -->
-          <div class="bg-white shadow sm:rounded-lg mb-6">
-            <div class="px-4 py-5 sm:p-6">
-              <h3 class="text-lg leading-6 font-medium text-gray-900">
-                New Scraping Job
-              </h3>
-              <div class="mt-2 max-w-xl text-sm text-gray-500">
-                <p>
-                  Start a new scraping job by entering the URL and selecting a
-                  template.
-                </p>
-              </div>
-              <form id="scrape-form" class="mt-5 space-y-6">
-                <div>
-                  <label
-                    for="url"
-                    class="block text-sm font-medium text-gray-700"
+                  ID
+                </th>
+                <th
+                  class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  URL
+                </th>
+                <th
+                  class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Status
+                </th>
+                <th
+                  class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Created
+                </th>
+                <th
+                  class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Completed
+                </th>
+                <th
+                  class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Result
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              {% for job in recent_jobs %}
+              <tr>
+                <td class="px-4 py-2 text-sm font-medium text-gray-900">
+                  {{ job.id }}
+                </td>
+                <td class="px-4 py-2 text-sm text-gray-500">{{ job.url }}</td>
+                <td class="px-4 py-2">
+                  <span
+                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if job.status == 'completed' %} bg-green-100 text-green-800 {% elif job.status == 'failed' %} bg-red-100 text-red-800 {% else %} bg-yellow-100 text-yellow-800 {% endif %}"
                   >
-                    Target URL
-                  </label>
-                  <div class="mt-1">
-                    <input
-                      type="url"
-                      name="url"
-                      id="url"
-                      required
-                      class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    for="template"
-                    class="block text-sm font-medium text-gray-700"
-                  >
-                    Template
-                  </label>
-                  <div class="mt-1">
-                    <select
-                      id="template"
-                      name="template"
-                      required
-                      class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                    >
-                      <option value="">Select a template</option>
-                      {% for template in templates %}
-                      <option value="{{ template.id }}">
-                        {{ template.name }}
-                      </option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <button
-                    type="submit"
-                    id="start-btn"
-                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    Start Scraping
-                  </button>
-                </div>
-              </form>
-              <!-- Progress & Log Section -->
-              <div id="job-progress-section" class="mt-6 hidden">
-                <div class="mb-2">
-                  <span class="font-semibold">Job Status:</span>
-                  <span id="job-status">Pending</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-4 mb-4">
-                  <div
-                    id="progress-bar"
-                    class="bg-indigo-600 h-4 rounded-full"
-                    style="width: 0%"
-                  ></div>
-                </div>
-                <div class="mb-2">
-                  <span class="font-semibold">Logs:</span>
-                  <pre
-                    id="job-logs"
-                    class="bg-gray-100 p-2 rounded h-40 overflow-y-auto text-xs"
-                  ></pre>
-                </div>
-                <div id="download-section" class="mt-4 hidden">
+                    {{ job.status }}
+                  </span>
+                </td>
+                <td class="px-4 py-2 text-sm text-gray-500">
+                  {{ job.created_at.strftime('%Y-%m-%d %H:%M') }}
+                </td>
+                <td class="px-4 py-2 text-sm text-gray-500">
+                  {% if job.completed_at %}{{
+                  job.completed_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{%
+                  endif %}
+                </td>
+                <td class="px-4 py-2 text-sm">
+                  {% if job.status == 'completed' and job.result %}
                   <a
-                    id="download-link"
-                    href="#"
-                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700"
+                    href="/api/job/{{ job.id }}/download"
+                    class="text-green-600 hover:text-green-900"
+                    ><i class="fas fa-download"></i> Download</a
                   >
-                    Download Results
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Recent Jobs -->
-          <div class="mt-8">
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
-              Recent Jobs
-            </h3>
-            <div class="flex flex-col">
-              <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                <div
-                  class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8"
-                >
-                  <div
-                    class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg"
-                  >
-                    <table class="min-w-full divide-y divide-gray-200">
-                      <thead class="bg-gray-50">
-                        <tr>
-                          <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            ID
-                          </th>
-                          <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            URL
-                          </th>
-                          <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            Status
-                          </th>
-                          <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            Created
-                          </th>
-                          <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            Completed
-                          </th>
-                          <th
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            Result
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody class="bg-white divide-y divide-gray-200">
-                        {% for job in recent_jobs %}
-                        <tr>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
-                          >
-                            {{ job.id }}
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                          >
-                            {{ job.url }}
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap">
-                            <span
-                              class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if job.status == 'completed' %} bg-green-100 text-green-800 {% elif job.status == 'failed' %} bg-red-100 text-red-800 {% else %} bg-yellow-100 text-yellow-800 {% endif %}"
-                            >
-                              {{ job.status }}
-                            </span>
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                          >
-                            {{ job.created_at.strftime('%Y-%m-%d %H:%M') }}
-                          </td>
-                          <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                          >
-                            {% if job.completed_at %}{{
-                            job.completed_at.strftime('%Y-%m-%d %H:%M') }}{%
-                            else %}-{% endif %}
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            {% if job.status == 'completed' and job.result %}
-                            <a
-                              href="/api/job/{{ job.id }}/download"
-                              class="text-green-600 hover:text-green-900"
-                              >Download</a
-                            >
-                            {% elif job.status == 'failed' %}
-                            <span class="text-red-600">Failed</span>
-                            {% else %}
-                            <span class="text-gray-400">-</span>
-                            {% endif %}
-                          </td>
-                        </tr>
-                        {% endfor %}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+                  {% elif job.status == 'failed' %}
+                  <span class="text-red-600">Failed</span>
+                  {% else %}
+                  <span class="text-gray-400">-</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
-      </main>
+      </div>
     </div>
 
     <script>
-      // Toggle user menu
-      const userMenuButton = document.getElementById("user-menu-button");
-      const userMenu = document.getElementById("user-menu");
-
-      userMenuButton.addEventListener("click", () => {
-        userMenu.classList.toggle("hidden");
-      });
-
-      // Close menu when clicking outside
-      document.addEventListener("click", (event) => {
-        if (
-          !userMenuButton.contains(event.target) &&
-          !userMenu.contains(event.target)
-        ) {
-          userMenu.classList.add("hidden");
-        }
-      });
-
-      // Scraping Job AJAX
-      const form = document.getElementById("scrape-form");
-      const progressSection = document.getElementById("job-progress-section");
+      let pollingInterval = null;
+      let currentJobId = null;
+      let isPaused = false;
+      // Job control buttons
+      const startBtn = document.getElementById("start-btn");
+      const pauseBtn = document.getElementById("pause-btn");
+      const stopBtn = document.getElementById("stop-btn");
       const progressBar = document.getElementById("progress-bar");
       const jobStatus = document.getElementById("job-status");
       const jobLogs = document.getElementById("job-logs");
+      const jobError = document.getElementById("job-error");
       const downloadSection = document.getElementById("download-section");
       const downloadLink = document.getElementById("download-link");
-      let pollingInterval = null;
-      let currentJobId = null;
+      const totalAds = document.getElementById("total-ads");
+      const processedAds = document.getElementById("processed-ads");
+      const currentPage = document.getElementById("current-page");
 
-      form.addEventListener("submit", function (e) {
-        e.preventDefault();
-        const url = document.getElementById("url").value;
-        const template = document.getElementById("template").value;
-        if (!url || !template) return;
-        document.getElementById("start-btn").disabled = true;
-        jobStatus.textContent = "Starting...";
-        progressBar.style.width = "0%";
-        jobLogs.textContent = "";
-        downloadSection.classList.add("hidden");
-        progressSection.classList.remove("hidden");
-        fetch("/api/scrape", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: `url=${encodeURIComponent(url)}&template=${encodeURIComponent(
-            template
-          )}`,
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.job_id) {
-              currentJobId = data.job_id;
-              pollJobStatus(currentJobId);
-            } else {
-              jobStatus.textContent = data.error || "Error";
-              document.getElementById("start-btn").disabled = false;
-            }
+      document
+        .getElementById("scrape-form")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          const url = document.getElementById("url").value;
+          const template = document.getElementById("template").value;
+          if (!url || !template) return;
+          startBtn.disabled = true;
+          pauseBtn.disabled = false;
+          stopBtn.disabled = false;
+          jobStatus.textContent = "Starting...";
+          jobError.textContent = "";
+          progressBar.style.width = "0%";
+          progressBar.textContent = "0%";
+          jobLogs.textContent = "";
+          downloadSection.classList.add("hidden");
+          fetch("/api/scrape", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `url=${encodeURIComponent(url)}&template=${encodeURIComponent(
+              template
+            )}`,
           })
-          .catch(() => {
-            jobStatus.textContent = "Error starting job";
-            document.getElementById("start-btn").disabled = false;
-          });
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.job_id) {
+                currentJobId = data.job_id;
+                pollJobStatus(currentJobId);
+              } else {
+                jobStatus.textContent = data.error || "Error";
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                stopBtn.disabled = true;
+              }
+            })
+            .catch(() => {
+              jobStatus.textContent = "Error starting job";
+              startBtn.disabled = false;
+              pauseBtn.disabled = true;
+              stopBtn.disabled = true;
+            });
+        });
+
+      pauseBtn.addEventListener("click", function () {
+        if (!currentJobId) return;
+        fetch(`/api/job/${currentJobId}/pause`, { method: "POST" }).then(() => {
+          isPaused = true;
+          jobStatus.textContent = "Paused";
+          pauseBtn.disabled = true;
+          startBtn.disabled = true;
+        });
+      });
+      stopBtn.addEventListener("click", function () {
+        if (!currentJobId) return;
+        fetch(`/api/job/${currentJobId}/stop`, { method: "POST" }).then(() => {
+          jobStatus.textContent = "Stopped";
+          stopBtn.disabled = true;
+          pauseBtn.disabled = true;
+          startBtn.disabled = false;
+          clearInterval(pollingInterval);
+        });
       });
 
       function pollJobStatus(jobId) {
         if (pollingInterval) clearInterval(pollingInterval);
         pollingInterval = setInterval(() => {
+          // Canlı log/progress çek
+          fetch(`/api/job/${jobId}/live`)
+            .then((res) => res.json())
+            .then((live) => {
+              // Log panelini güncelle
+              jobLogs.textContent = live.logs.join("\n");
+              // Progress bar ve detaylar
+              progressBar.style.width = live.progress + "%";
+              progressBar.textContent = live.progress + "%";
+              totalAds.textContent = live.total_ads || "-";
+              processedAds.textContent = live.processed_ads || "-";
+              currentPage.textContent = live.current_page || "-";
+            });
+          // Job status çek
           fetch(`/api/job/${jobId}`)
             .then((res) => res.json())
             .then((data) => {
               jobStatus.textContent = data.status;
               if (data.status === "completed") {
                 progressBar.style.width = "100%";
+                progressBar.textContent = "100%";
                 downloadSection.classList.remove("hidden");
                 downloadLink.href = `/api/job/${jobId}/download`;
                 clearInterval(pollingInterval);
-                document.getElementById("start-btn").disabled = false;
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                stopBtn.disabled = true;
               } else if (data.status === "failed") {
                 progressBar.style.width = "0%";
+                progressBar.textContent = "0%";
                 jobLogs.textContent = data.result || "Job failed.";
+                jobError.textContent = data.result || "Job failed.";
                 clearInterval(pollingInterval);
-                document.getElementById("start-btn").disabled = false;
-              } else {
-                // Simulate progress (optional: backend can provide real progress)
-                progressBar.style.width = "50%";
-                jobLogs.textContent = data.result || "";
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                stopBtn.disabled = true;
+              } else if (data.status === "paused") {
+                jobStatus.textContent = "Paused";
+                pauseBtn.disabled = true;
+                startBtn.disabled = true;
               }
             })
             .catch(() => {
               jobStatus.textContent = "Error fetching job status";
               clearInterval(pollingInterval);
-              document.getElementById("start-btn").disabled = false;
+              startBtn.disabled = false;
+              pauseBtn.disabled = true;
+              stopBtn.disabled = true;
             });
         }, 2000);
       }
