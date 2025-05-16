@@ -187,7 +187,23 @@ def process_scraping_job(job_id):
     if not job:
         return
     driver = None
+    log_key = f'job:{job_id}:logs'
+    progress_key = f'job:{job_id}:progress'
+    total_ads_key = f'job:{job_id}:total_ads'
+    processed_ads_key = f'job:{job_id}:processed_ads'
+    current_page_key = f'job:{job_id}:current_page'
     try:
+        def log(msg):
+            redis_client.rpush(log_key, msg)
+        def set_progress(val):
+            redis_client.set(progress_key, val)
+        def set_total_ads(val):
+            redis_client.set(total_ads_key, val)
+        def set_processed_ads(val):
+            redis_client.set(processed_ads_key, val)
+        def set_current_page(val):
+            redis_client.set(current_page_key, val)
+
         # Initialize Chrome driver
         options = webdriver.ChromeOptions()
         if sys.platform == 'darwin' and platform.machine() == 'arm64':
@@ -198,58 +214,67 @@ def process_scraping_job(job_id):
             service = Service(driver_path)
             driver = webdriver.Chrome(service=service, options=options)
 
-        # Get template content
         template = Template.query.get(job.template_id)
         if not template:
             raise ValueError("Template not found")
-
-        # Parse template content
         template_config = json.loads(template.content)
-
-        # Start scraping process
         base_url = job.url
         driver.get(base_url)
-        time.sleep(5)  # Wait for page load
-
-        # Get total pages
+        time.sleep(5)
+        log(f"Başlangıç: {base_url}")
         try:
             page_links = driver.find_elements(By.CSS_SELECTOR, "a.page-link[data-page]")
             total_pages = max([int(link.get_attribute("data-page")) for link in page_links])
         except Exception as e:
             total_pages = 1
-
-        # Initialize results
+        log(f"Toplam sayfa: {total_pages}")
         results = []
         processed_links = set()
-
-        # Process each page
+        total_ads = 0
+        processed_ads = 0
+        # Tüm ilanları saymak için ilk sayfadaki ilanları say
+        try:
+            all_links = set()
+            for page in range(1, total_pages + 1):
+                if page > 1:
+                    page_url = f"{base_url}&page={page}"
+                    driver.get(page_url)
+                    time.sleep(2)
+                links = [e.get_attribute('href') for e in driver.find_elements(By.CSS_SELECTOR, 'a[href*="/app/portfoy/detay/"]')]
+                for l in links:
+                    all_links.add(l)
+            total_ads = len(all_links)
+            set_total_ads(total_ads)
+            log(f"Toplam ilan: {total_ads}")
+        except Exception as e:
+            set_total_ads(0)
+            log(f"Toplam ilan sayısı alınamadı: {e}")
+        # Asıl scraping
         for page in range(1, total_pages + 1):
-            # PAUSE/STOP kontrolü
+            set_current_page(page)
+            log(f"Sayfa {page} işleniyor...")
             while redis_client.get(f'job:{job_id}:state') == b'paused':
                 time.sleep(1)
             if redis_client.get(f'job:{job_id}:state') == b'stopped':
                 job.status = 'failed'
                 job.result = 'Job stopped by user.'
                 db.session.commit()
+                log("Kullanıcı tarafından durduruldu.")
                 return
             if page > 1:
                 page_url = f"{base_url}&page={page}"
                 driver.get(page_url)
-                time.sleep(5)
-
-            # Get listing links
+                time.sleep(2)
             links = [e.get_attribute('href') for e in driver.find_elements(By.CSS_SELECTOR, 'a[href*="/app/portfoy/detay/"]')]
             unique_links = [l for l in links if l not in processed_links]
-
-            # Process each listing
             for href in unique_links:
-                # PAUSE/STOP kontrolü
                 while redis_client.get(f'job:{job_id}:state') == b'paused':
                     time.sleep(1)
                 if redis_client.get(f'job:{job_id}:state') == b'stopped':
                     job.status = 'failed'
                     job.result = 'Job stopped by user.'
                     db.session.commit()
+                    log("Kullanıcı tarafından durduruldu.")
                     return
                 processed_links.add(href)
                 try:
@@ -257,42 +282,47 @@ def process_scraping_job(job_id):
                     WebDriverWait(driver, 10).until(
                         EC.presence_of_element_located((By.CSS_SELECTOR, 'p.description'))
                     )
-
-                    # Extract data based on template configuration
                     data = {}
                     for field, selector in template_config.items():
                         try:
                             data[field] = driver.find_element(By.CSS_SELECTOR, selector).text.strip()
                         except:
                             data[field] = ''
-
-                    # Add listing URL
                     data['Ilan Linki'] = href
-
                     results.append(data)
+                    processed_ads += 1
+                    set_processed_ads(processed_ads)
+                    if total_ads:
+                        percent = int((processed_ads / total_ads) * 100)
+                        set_progress(percent)
+                        progress_str = f"%{percent}"
+                    else:
+                        set_progress(0)
+                        progress_str = "-"
+                    log(f"[{processed_ads}/{total_ads}] {data.get('Ilan Basligi', '')}")
                 except Exception as e:
+                    log(f"Hata: {href} - {e}")
                     continue
-
-        # Save results
         if results:
             df = pd.DataFrame(results)
             output_path = f"results/job_{job_id}.csv"
             os.makedirs("results", exist_ok=True)
             df.to_csv(output_path, index=False, encoding='utf-8-sig')
-            
             job.status = 'completed'
             job.completed_at = datetime.utcnow()
             job.result = output_path
+            log("İşlem tamamlandı. Sonuç dosyası hazır.")
         else:
             job.status = 'failed'
             job.result = 'No data found'
-
+            log("Hiç veri bulunamadı.")
         db.session.commit()
-
     except Exception as e:
         job.status = 'failed'
         job.result = str(e)
         db.session.commit()
+        if 'log' in locals():
+            log(f"Beklenmeyen hata: {e}")
     finally:
         if driver:
             try:
@@ -920,6 +950,31 @@ def stop_job(job_id):
     job.status = 'failed'
     db.session.commit()
     return jsonify({'status': 'stopped'})
+
+@app.route('/api/job/<int:job_id>/live')
+@login_required
+def job_live_status(job_id):
+    job = ScrapingJob.query.get_or_404(job_id)
+    if job.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    log_key = f'job:{job_id}:logs'
+    progress_key = f'job:{job_id}:progress'
+    total_ads_key = f'job:{job_id}:total_ads'
+    processed_ads_key = f'job:{job_id}:processed_ads'
+    current_page_key = f'job:{job_id}:current_page'
+    logs = redis_client.lrange(log_key, 0, -1)
+    logs = [l.decode() for l in logs]
+    progress = int(redis_client.get(progress_key) or 0)
+    total_ads = int(redis_client.get(total_ads_key) or 0)
+    processed_ads = int(redis_client.get(processed_ads_key) or 0)
+    current_page = int(redis_client.get(current_page_key) or 0)
+    return jsonify({
+        'logs': logs,
+        'progress': progress,
+        'total_ads': total_ads,
+        'processed_ads': processed_ads,
+        'current_page': current_page
+    })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True) 

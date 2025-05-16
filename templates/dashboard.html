@@ -12,350 +12,544 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
       rel="stylesheet"
     />
+    <style>
+      body {
+        background: #181a1b;
+      }
+      .tab-active {
+        background: #23272a;
+        color: #fff;
+      }
+      .tab-inactive {
+        background: #23272a80;
+        color: #bbb;
+      }
+      .input-dark {
+        background: #23272a;
+        color: #fff;
+        border: 1px solid #444;
+      }
+      .input-dark:focus {
+        border-color: #6366f1;
+      }
+      .label-dark {
+        color: #bbb;
+      }
+      .section-dark {
+        background: #23272a;
+        border-radius: 0.5rem;
+      }
+      .btn-dark {
+        background: #36393f;
+        color: #fff;
+      }
+      .btn-dark:hover {
+        background: #6366f1;
+        color: #fff;
+      }
+      .checkbox-dark:checked {
+        accent-color: #6366f1;
+      }
+      .progress-bg {
+        background: #23272a;
+      }
+      .progress-bar {
+        background: #6366f1;
+      }
+      .log-dark {
+        background: #111214;
+        color: #b9fbc0;
+        font-family: monospace;
+      }
+    </style>
   </head>
-  <body class="bg-gray-100">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-lg">
-      <div class="max-w-7xl mx-auto px-4">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <a href="/" class="text-2xl font-bold text-indigo-600">iScrape</a>
-          </div>
-          <div class="flex items-center space-x-4">
-            <a href="/dashboard" class="text-indigo-600 font-semibold"
-              >Dashboard</a
-            >
-            <a
-              href="/dashboard/templates"
-              class="text-gray-600 hover:text-indigo-600"
-              >Templates</a
-            >
-            <a
-              href="/dashboard/upgrade"
-              class="text-gray-600 hover:text-indigo-600"
-              >Upgrade</a
-            >
-            <img
-              class="h-8 w-8 rounded-full"
-              src="https://ui-avatars.com/api/?name={{ current_user.email }}"
-              alt=""
-            />
-          </div>
-        </div>
-      </div>
-    </nav>
-
-    <!-- Main Content -->
-    <div class="max-w-5xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-lg">
-      <h2 class="text-2xl font-bold mb-4">Scraping Control Panel</h2>
-      <form id="scrape-form" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div>
-          <label for="url" class="block text-sm font-medium text-gray-700"
-            >Target URL</label
-          >
-          <input
-            type="url"
-            name="url"
-            id="url"
-            required
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-          />
-        </div>
-        <div>
-          <label for="template" class="block text-sm font-medium text-gray-700"
-            >Template</label
-          >
-          <select
-            id="template"
-            name="template"
-            required
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            <option value="">Select a template</option>
-            {% for template in templates %}
-            <option value="{{ template.id }}">{{ template.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="flex items-end space-x-2">
-          <button
-            type="submit"
-            id="start-btn"
-            class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-semibold flex-1"
-          >
-            <i class="fas fa-play mr-2"></i>Start
-          </button>
-          <button
-            type="button"
-            id="pause-btn"
-            class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 font-semibold flex-1"
-            disabled
-          >
-            <i class="fas fa-pause mr-2"></i>Pause
-          </button>
-          <button
-            type="button"
-            id="stop-btn"
-            class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-semibold flex-1"
-            disabled
-          >
-            <i class="fas fa-stop mr-2"></i>Stop
-          </button>
-        </div>
-      </form>
-      <div class="mb-4">
-        <div class="flex items-center mb-2">
-          <span class="font-semibold mr-2">Job Status:</span>
-          <span id="job-status" class="text-blue-700">Idle</span>
-          <span id="job-error" class="ml-4 text-red-600 font-semibold"></span>
-        </div>
-        <div class="w-full bg-gray-200 rounded-full h-6">
-          <div
-            id="progress-bar"
-            class="bg-indigo-600 h-6 rounded-full text-white text-center font-bold transition-all duration-500"
-            style="width: 0%"
-          >
-            0%
-          </div>
-        </div>
-        <div class="flex space-x-6 mt-2 text-sm">
-          <div>Total Ads: <span id="total-ads">-</span></div>
-          <div>Processed: <span id="processed-ads">-</span></div>
-          <div>Current Page: <span id="current-page">-</span></div>
-        </div>
-      </div>
-      <div class="mb-4">
-        <label class="font-semibold">Logs:</label>
-        <pre
-          id="job-logs"
-          class="bg-black text-green-200 p-4 rounded h-64 overflow-y-auto text-xs font-mono"
-        ></pre>
-      </div>
-      <div id="download-section" class="hidden mb-4">
-        <a
-          id="download-link"
-          href="#"
-          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700"
+  <body class="min-h-screen">
+    <div class="max-w-5xl mx-auto mt-8 p-4">
+      <!-- Tabs -->
+      <div class="flex mb-4">
+        <button
+          id="tab-scraper"
+          class="tab-active px-6 py-2 rounded-tl-lg rounded-tr-lg font-bold focus:outline-none"
         >
-          <i class="fas fa-download mr-2"></i>Download Results
-        </a>
+          İlan Scraper
+        </button>
+        <button
+          id="tab-whatsapp"
+          class="tab-inactive px-6 py-2 rounded-tl-lg rounded-tr-lg font-bold focus:outline-none ml-2"
+        >
+          WhatsApp Bot
+        </button>
       </div>
-      <div class="mt-8">
-        <h3 class="text-lg font-bold mb-2">Recent Jobs</h3>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th
-                  class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+      <!-- Tab Contents -->
+      <div id="content-scraper" class="section-dark p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div class="mb-4">
+              <label class="label-dark block mb-1">İlan Türü:</label>
+              <select class="input-dark w-full rounded p-2">
+                <option>Yayındaki İlanlar</option>
+                <option>Yayından Kaldırılan İlanlar</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label class="label-dark block mb-1">Sıralama:</label>
+              <select class="input-dark w-full rounded p-2">
+                <option>Varsayılan sıralama (tarih ↓)</option>
+                <option>Fiyat: Yüksekten düşüğe</option>
+                <option>Fiyat: Düşükten yükseğe</option>
+                <option>Tarih: Yeni>Eski</option>
+                <option>Tarih: Eski>Yeni</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label class="label-dark block mb-1">Kayıt Konumu:</label>
+              <div class="flex items-center space-x-2">
+                <input
+                  type="text"
+                  class="input-dark flex-1 rounded p-2"
+                  placeholder="/path/to/save"
+                  readonly
+                  id="scraper-save-path"
+                />
+                <button
+                  class="btn-dark px-3 py-2 rounded"
+                  onclick="alert('Dosya seçici açılacak (placeholder)')"
                 >
-                  ID
-                </th>
-                <th
-                  class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  Gözat…
+                </button>
+              </div>
+            </div>
+            <div class="mb-4">
+              <label class="label-dark block mb-1">Dosya Adı:</label>
+              <input
+                type="text"
+                class="input-dark w-full rounded p-2"
+                placeholder="Örn: revy_ilanlar_2024"
+              />
+            </div>
+          </div>
+          <div>
+            <div class="mb-4">
+              <label class="label-dark block mb-1">İlerleme</label>
+              <div class="flex items-center mb-1">
+                <span class="text-xs text-gray-400">0/0 ilan işlendi</span>
+                <span class="ml-auto text-xs text-gray-400">0%</span>
+              </div>
+              <div class="progress-bg w-full h-4 rounded">
+                <div class="progress-bar h-4 rounded" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="flex space-x-2 mt-4">
+              <button
+                class="btn-dark flex-1 py-2 rounded"
+                style="background: #43b581"
+              >
+                <i class="fas fa-chrome mr-2"></i>Chrome'u Aç ve Giriş Yap
+              </button>
+              <button class="btn-dark flex-1 py-2 rounded" disabled>
+                Duraklat
+              </button>
+              <button class="btn-dark flex-1 py-2 rounded" disabled>
+                Durdur
+              </button>
+              <button
+                class="btn-dark flex-1 py-2 rounded"
+                style="background: #7289da"
+              >
+                Başlat
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="mt-6">
+          <label class="label-dark block mb-1">Loglar:</label>
+          <pre class="log-dark w-full h-40 rounded p-3 overflow-y-auto">
+Log paneli (placeholder)</pre
+          >
+        </div>
+      </div>
+      <div id="content-whatsapp" class="section-dark p-6 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div class="mb-4">
+              <label class="label-dark block mb-1">Veri Dosyası Konumu:</label>
+              <div class="flex items-center space-x-2">
+                <input
+                  type="text"
+                  class="input-dark flex-1 rounded p-2"
+                  placeholder="/path/to/file.csv"
+                  readonly
+                  id="wa-file-path"
+                />
+                <button
+                  class="btn-dark px-3 py-2 rounded"
+                  onclick="alert('Dosya seçici açılacak (placeholder)')"
                 >
-                  URL
-                </th>
-                <th
-                  class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Status
-                </th>
-                <th
-                  class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Created
-                </th>
-                <th
-                  class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Completed
-                </th>
-                <th
-                  class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Result
-                </th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              {% for job in recent_jobs %}
-              <tr>
-                <td class="px-4 py-2 text-sm font-medium text-gray-900">
-                  {{ job.id }}
-                </td>
-                <td class="px-4 py-2 text-sm text-gray-500">{{ job.url }}</td>
-                <td class="px-4 py-2">
-                  <span
-                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if job.status == 'completed' %} bg-green-100 text-green-800 {% elif job.status == 'failed' %} bg-red-100 text-red-800 {% else %} bg-yellow-100 text-yellow-800 {% endif %}"
-                  >
-                    {{ job.status }}
-                  </span>
-                </td>
-                <td class="px-4 py-2 text-sm text-gray-500">
-                  {{ job.created_at.strftime('%Y-%m-%d %H:%M') }}
-                </td>
-                <td class="px-4 py-2 text-sm text-gray-500">
-                  {% if job.completed_at %}{{
-                  job.completed_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{%
-                  endif %}
-                </td>
-                <td class="px-4 py-2 text-sm">
-                  {% if job.status == 'completed' and job.result %}
-                  <a
-                    href="/api/job/{{ job.id }}/download"
-                    class="text-green-600 hover:text-green-900"
-                    ><i class="fas fa-download"></i> Download</a
-                  >
-                  {% elif job.status == 'failed' %}
-                  <span class="text-red-600">Failed</span>
-                  {% else %}
-                  <span class="text-gray-400">-</span>
-                  {% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+                  Gözat…
+                </button>
+              </div>
+            </div>
+            <div class="mb-2 flex items-center">
+              <input
+                type="checkbox"
+                class="checkbox-dark mr-2"
+                id="wa-test-mode"
+                checked
+              />
+              <label for="wa-test-mode" class="label-dark">Test Modu</label>
+            </div>
+            <div class="mb-4">
+              <input
+                type="text"
+                class="input-dark w-full rounded p-2"
+                placeholder="5xx... şeklinde giriniz"
+              />
+            </div>
+            <div class="mb-4">
+              <label class="label-dark block mb-1"
+                >Hazır Mesaj Şablonları</label
+              >
+              <div class="flex space-x-4">
+                <div>
+                  <input
+                    type="checkbox"
+                    class="checkbox-dark mr-1"
+                    id="wa-t1"
+                  /><label for="wa-t1" class="label-dark">Şablon 1</label>
+                </div>
+                <div>
+                  <input
+                    type="checkbox"
+                    class="checkbox-dark mr-1"
+                    id="wa-t2"
+                  /><label for="wa-t2" class="label-dark">Şablon 2</label>
+                </div>
+                <div>
+                  <input
+                    type="checkbox"
+                    class="checkbox-dark mr-1"
+                    id="wa-t3"
+                  /><label for="wa-t3" class="label-dark">Şablon 3</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="mb-4">
+              <input
+                type="checkbox"
+                class="checkbox-dark mr-2"
+                id="wa-custom-template"
+              />
+              <label for="wa-custom-template" class="label-dark"
+                >Özel şablon kullan</label
+              >
+              <input
+                type="text"
+                class="input-dark w-full rounded p-2 mt-2"
+                placeholder="Yazı tonu girin (örn: samimi, profesyonel, arkadaş canlısı, ciddi)"
+              />
+              <button class="btn-dark mt-2 px-3 py-2 rounded">
+                AI ile Şablon Oluştur
+              </button>
+            </div>
+            <div class="mb-4">
+              <input
+                type="checkbox"
+                class="checkbox-dark mr-2"
+                id="wa-title-insert"
+              />
+              <label for="wa-title-insert" class="label-dark"
+                >İlan başlığını ekle ({{title}})</label
+              >
+            </div>
+            <textarea
+              class="input-dark w-full rounded p-2 h-24"
+              placeholder="Mesaj şablonunuzu buraya yazın veya AI ile oluşturun..."
+            ></textarea>
+          </div>
+        </div>
+        <div class="flex space-x-2 mt-4">
+          <button
+            class="btn-dark flex-1 py-2 rounded"
+            style="background: #43b581"
+          >
+            <i class="fas fa-chrome mr-2"></i>Chrome'u Aç ve Giriş Yap
+          </button>
+          <button class="btn-dark flex-1 py-2 rounded" disabled>
+            Duraklat
+          </button>
+          <button class="btn-dark flex-1 py-2 rounded" disabled>Durdur</button>
+          <button
+            class="btn-dark flex-1 py-2 rounded"
+            style="background: #7289da"
+          >
+            Başlat
+          </button>
+        </div>
+        <div class="mt-6">
+          <label class="label-dark block mb-1">Loglar:</label>
+          <pre class="log-dark w-full h-40 rounded p-3 overflow-y-auto">
+Log paneli (placeholder)</pre
+          >
         </div>
       </div>
     </div>
-
+    <!-- Add hidden file inputs for file selection -->
+    <input type="file" id="scraper-file-input" class="hidden" />
+    <input type="file" id="wa-file-input" class="hidden" />
     <script>
-      let pollingInterval = null;
-      let currentJobId = null;
-      let isPaused = false;
-      // Job control buttons
-      const startBtn = document.getElementById("start-btn");
-      const pauseBtn = document.getElementById("pause-btn");
-      const stopBtn = document.getElementById("stop-btn");
-      const progressBar = document.getElementById("progress-bar");
-      const jobStatus = document.getElementById("job-status");
-      const jobLogs = document.getElementById("job-logs");
-      const jobError = document.getElementById("job-error");
-      const downloadSection = document.getElementById("download-section");
-      const downloadLink = document.getElementById("download-link");
-      const totalAds = document.getElementById("total-ads");
-      const processedAds = document.getElementById("processed-ads");
-      const currentPage = document.getElementById("current-page");
+      // Tab switching
+      const tabScraper = document.getElementById("tab-scraper");
+      const tabWhatsapp = document.getElementById("tab-whatsapp");
+      const contentScraper = document.getElementById("content-scraper");
+      const contentWhatsapp = document.getElementById("content-whatsapp");
+      tabScraper.onclick = () => {
+        tabScraper.classList.add("tab-active");
+        tabScraper.classList.remove("tab-inactive");
+        tabWhatsapp.classList.remove("tab-active");
+        tabWhatsapp.classList.add("tab-inactive");
+        contentScraper.classList.remove("hidden");
+        contentWhatsapp.classList.add("hidden");
+      };
+      tabWhatsapp.onclick = () => {
+        tabWhatsapp.classList.add("tab-active");
+        tabWhatsapp.classList.remove("tab-inactive");
+        tabScraper.classList.remove("tab-active");
+        tabScraper.classList.add("tab-inactive");
+        contentWhatsapp.classList.remove("hidden");
+        contentScraper.classList.add("hidden");
+      };
+      // File picker for İlan Scraper
+      const scraperFileInput = document.getElementById("scraper-file-input");
+      const scraperSavePath = document.getElementById("scraper-save-path");
+      const scraperBrowseBtn = document.querySelector(
+        "#content-scraper button[onclick]"
+      );
+      scraperBrowseBtn.onclick = function (e) {
+        e.preventDefault();
+        scraperFileInput.click();
+      };
+      scraperFileInput.onchange = function () {
+        if (scraperFileInput.files.length > 0) {
+          scraperSavePath.value = scraperFileInput.files[0].name;
+        }
+      };
+      // File picker for WhatsApp Bot
+      const waFileInput = document.getElementById("wa-file-input");
+      const waFilePath = document.getElementById("wa-file-path");
+      const waBrowseBtn = document.querySelector(
+        "#content-whatsapp button[onclick]"
+      );
+      waBrowseBtn.onclick = function (e) {
+        e.preventDefault();
+        waFileInput.click();
+      };
+      waFileInput.onchange = function () {
+        if (waFileInput.files.length > 0) {
+          waFilePath.value = waFileInput.files[0].name;
+        }
+      };
+      // Başlat butonları
+      const scraperStartBtn = document.querySelector(
+        '#content-scraper button[style*="#7289da"]'
+      );
+      const waStartBtn = document.querySelector(
+        '#content-whatsapp button[style*="#7289da"]'
+      );
 
-      document
-        .getElementById("scrape-form")
-        .addEventListener("submit", function (e) {
-          e.preventDefault();
-          const url = document.getElementById("url").value;
-          const template = document.getElementById("template").value;
-          if (!url || !template) return;
-          startBtn.disabled = true;
-          pauseBtn.disabled = false;
-          stopBtn.disabled = false;
-          jobStatus.textContent = "Starting...";
-          jobError.textContent = "";
-          progressBar.style.width = "0%";
-          progressBar.textContent = "0%";
-          jobLogs.textContent = "";
-          downloadSection.classList.add("hidden");
-          fetch("/api/scrape", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: `url=${encodeURIComponent(url)}&template=${encodeURIComponent(
-              template
-            )}`,
-          })
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.job_id) {
-                currentJobId = data.job_id;
-                pollJobStatus(currentJobId);
-              } else {
-                jobStatus.textContent = data.error || "Error";
-                startBtn.disabled = false;
-                pauseBtn.disabled = true;
-                stopBtn.disabled = true;
-              }
-            })
-            .catch(() => {
-              jobStatus.textContent = "Error starting job";
-              startBtn.disabled = false;
-              pauseBtn.disabled = true;
-              stopBtn.disabled = true;
-            });
-        });
+      let scraperPolling = null;
+      let waPolling = null;
+      let currentScraperJobId = null;
+      let currentWaTaskId = null;
+      const scraperPauseBtn = document.querySelector(
+        '#content-scraper button:contains("Duraklat")'
+      );
+      const scraperStopBtn = document.querySelector(
+        '#content-scraper button:contains("Durdur")'
+      );
+      const scraperLogPanel = document.querySelector("#content-scraper pre");
+      const scraperProgressBar = document.querySelector(
+        "#content-scraper .progress-bar"
+      );
+      const scraperProgressText = document.querySelector(
+        "#content-scraper .flex.items-center.mb-1 span:last-child"
+      );
 
-      pauseBtn.addEventListener("click", function () {
-        if (!currentJobId) return;
-        fetch(`/api/job/${currentJobId}/pause`, { method: "POST" }).then(() => {
-          isPaused = true;
-          jobStatus.textContent = "Paused";
-          pauseBtn.disabled = true;
-          startBtn.disabled = true;
-        });
-      });
-      stopBtn.addEventListener("click", function () {
-        if (!currentJobId) return;
-        fetch(`/api/job/${currentJobId}/stop`, { method: "POST" }).then(() => {
-          jobStatus.textContent = "Stopped";
-          stopBtn.disabled = true;
-          pauseBtn.disabled = true;
-          startBtn.disabled = false;
-          clearInterval(pollingInterval);
-        });
-      });
+      const waPauseBtn = document.querySelector(
+        '#content-whatsapp button:contains("Duraklat")'
+      );
+      const waStopBtn = document.querySelector(
+        '#content-whatsapp button:contains("Durdur")'
+      );
+      const waLogPanel = document.querySelector("#content-whatsapp pre");
+      const waProgressBar = document.querySelector(
+        "#content-whatsapp .progress-bar"
+      );
+      const waProgressText = document.querySelector(
+        "#content-whatsapp .flex.items-center.mb-1 span:last-child"
+      );
 
-      function pollJobStatus(jobId) {
-        if (pollingInterval) clearInterval(pollingInterval);
-        pollingInterval = setInterval(() => {
-          // Canlı log/progress çek
+      // Patch for querySelector :contains
+      (function () {
+        const oldQuerySelector = Document.prototype.querySelector;
+        Document.prototype.querySelector = function (sel) {
+          if (sel.includes(":contains")) {
+            const [pre, text] = sel.split(":contains");
+            const cleanText = text.replace(/[()'"\s]/g, "");
+            const nodes = this.querySelectorAll(pre);
+            for (let n of nodes)
+              if (n.textContent.includes(cleanText)) return n;
+            return null;
+          }
+          return oldQuerySelector.call(this, sel);
+        };
+      })();
+
+      // --- İlan Scraper Polling ---
+      function pollScraperJob(jobId) {
+        if (scraperPolling) clearInterval(scraperPolling);
+        currentScraperJobId = jobId;
+        scraperPauseBtn.disabled = false;
+        scraperStopBtn.disabled = false;
+        scraperPolling = setInterval(() => {
           fetch(`/api/job/${jobId}/live`)
             .then((res) => res.json())
             .then((live) => {
-              // Log panelini güncelle
-              jobLogs.textContent = live.logs.join("\n");
-              // Progress bar ve detaylar
-              progressBar.style.width = live.progress + "%";
-              progressBar.textContent = live.progress + "%";
-              totalAds.textContent = live.total_ads || "-";
-              processedAds.textContent = live.processed_ads || "-";
-              currentPage.textContent = live.current_page || "-";
+              scraperLogPanel.textContent = live.logs.join("\n");
+              scraperProgressBar.style.width = live.progress + "%";
+              scraperProgressText.textContent = live.progress + "%";
             });
-          // Job status çek
           fetch(`/api/job/${jobId}`)
             .then((res) => res.json())
             .then((data) => {
-              jobStatus.textContent = data.status;
-              if (data.status === "completed") {
-                progressBar.style.width = "100%";
-                progressBar.textContent = "100%";
-                downloadSection.classList.remove("hidden");
-                downloadLink.href = `/api/job/${jobId}/download`;
-                clearInterval(pollingInterval);
-                startBtn.disabled = false;
-                pauseBtn.disabled = true;
-                stopBtn.disabled = true;
-              } else if (data.status === "failed") {
-                progressBar.style.width = "0%";
-                progressBar.textContent = "0%";
-                jobLogs.textContent = data.result || "Job failed.";
-                jobError.textContent = data.result || "Job failed.";
-                clearInterval(pollingInterval);
-                startBtn.disabled = false;
-                pauseBtn.disabled = true;
-                stopBtn.disabled = true;
-              } else if (data.status === "paused") {
-                jobStatus.textContent = "Paused";
-                pauseBtn.disabled = true;
-                startBtn.disabled = true;
+              if (data.status === "completed" || data.status === "failed") {
+                clearInterval(scraperPolling);
+                scraperPauseBtn.disabled = true;
+                scraperStopBtn.disabled = true;
               }
-            })
-            .catch(() => {
-              jobStatus.textContent = "Error fetching job status";
-              clearInterval(pollingInterval);
-              startBtn.disabled = false;
-              pauseBtn.disabled = true;
-              stopBtn.disabled = true;
             });
         }, 2000);
       }
+      scraperPauseBtn.onclick = function () {
+        if (!currentScraperJobId) return;
+        fetch(`/api/job/${currentScraperJobId}/pause`, { method: "POST" });
+        scraperPauseBtn.disabled = true;
+      };
+      scraperStopBtn.onclick = function () {
+        if (!currentScraperJobId) return;
+        fetch(`/api/job/${currentScraperJobId}/stop`, { method: "POST" });
+        scraperStopBtn.disabled = true;
+        scraperPauseBtn.disabled = true;
+      };
+      // --- WhatsApp Bot Polling ---
+      function pollWaJob(taskId) {
+        if (waPolling) clearInterval(waPolling);
+        currentWaTaskId = taskId;
+        waPauseBtn.disabled = false;
+        waStopBtn.disabled = false;
+        waPolling = setInterval(() => {
+          fetch(`/api/whatsapp-bot/progress/${taskId}`)
+            .then((res) => res.json())
+            .then((live) => {
+              waLogPanel.textContent = live.logs.join("\n");
+              waProgressBar.style.width = live.progress + "%";
+              waProgressText.textContent = live.progress + "%";
+            });
+          // WhatsApp Bot state kontrolü
+          // (state: completed/failed ise polling durur)
+          fetch(`/api/whatsapp-bot/progress/${taskId}`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.state === "completed" || data.state === "failed") {
+                clearInterval(waPolling);
+                waPauseBtn.disabled = true;
+                waStopBtn.disabled = true;
+              }
+            });
+        }, 2000);
+      }
+      waPauseBtn.onclick = function () {
+        // WhatsApp Bot için pause endpointi eklenirse burada çağrılır
+        waPauseBtn.disabled = true;
+      };
+      waStopBtn.onclick = function () {
+        // WhatsApp Bot için stop endpointi eklenirse burada çağrılır
+        waStopBtn.disabled = true;
+        waPauseBtn.disabled = true;
+      };
+      // --- Başlat butonlarını güncelle ---
+      scraperStartBtn.onclick = function (e) {
+        e.preventDefault();
+        const ilanTuru = document.querySelector(
+          "#content-scraper select"
+        ).value;
+        const siralama = document.querySelectorAll("#content-scraper select")[1]
+          .value;
+        const dosyaAdi = document.querySelector(
+          '#content-scraper input[placeholder*="revy_ilanlar"]'
+        ).value;
+        const template = 1;
+        const url =
+          dosyaAdi ||
+          "https://www.revy.com.tr/app/portfoy/ilanlar?export=0&fsbo=true&area=my&advertisement_status=active";
+        scraperStartBtn.disabled = true;
+        fetch("/api/scrape", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: `url=${encodeURIComponent(url)}&template=${encodeURIComponent(
+            template
+          )}`,
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.job_id) {
+              pollScraperJob(data.job_id);
+            } else {
+              alert(data.error || "Job başlatılamadı!");
+            }
+            scraperStartBtn.disabled = false;
+          })
+          .catch(() => {
+            alert("Job başlatılırken hata!");
+            scraperStartBtn.disabled = false;
+          });
+      };
+      waStartBtn.onclick = function (e) {
+        e.preventDefault();
+        const file = waFileInput.files[0];
+        if (!file) {
+          alert("Lütfen bir CSV dosyası seçin!");
+          return;
+        }
+        const formData = new FormData();
+        formData.append("csv_file", file);
+        formData.append(
+          "test_mode",
+          document.getElementById("wa-test-mode").checked ? "true" : "false"
+        );
+        formData.append("test_phone", "");
+        formData.append("selected_templates", JSON.stringify({}));
+        formData.append("custom_template", "");
+        waStartBtn.disabled = true;
+        fetch("/api/whatsapp-bot", {
+          method: "POST",
+          body: formData,
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.task_id) {
+              pollWaJob(data.task_id);
+            } else {
+              alert(data.error || "Job başlatılamadı!");
+            }
+            waStartBtn.disabled = false;
+          })
+          .catch(() => {
+            alert("Job başlatılırken hata!");
+            waStartBtn.disabled = false;
+          });
+      };
     </script>
   </body>
 </html>
