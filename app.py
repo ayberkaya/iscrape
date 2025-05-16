@@ -186,7 +186,7 @@ def process_scraping_job(job_id):
     job = ScrapingJob.query.get(job_id)
     if not job:
         return
-    
+    driver = None
     try:
         # Initialize Chrome driver
         options = webdriver.ChromeOptions()
@@ -224,6 +224,14 @@ def process_scraping_job(job_id):
 
         # Process each page
         for page in range(1, total_pages + 1):
+            # PAUSE/STOP kontrolü
+            while redis_client.get(f'job:{job_id}:state') == b'paused':
+                time.sleep(1)
+            if redis_client.get(f'job:{job_id}:state') == b'stopped':
+                job.status = 'failed'
+                job.result = 'Job stopped by user.'
+                db.session.commit()
+                return
             if page > 1:
                 page_url = f"{base_url}&page={page}"
                 driver.get(page_url)
@@ -235,6 +243,14 @@ def process_scraping_job(job_id):
 
             # Process each listing
             for href in unique_links:
+                # PAUSE/STOP kontrolü
+                while redis_client.get(f'job:{job_id}:state') == b'paused':
+                    time.sleep(1)
+                if redis_client.get(f'job:{job_id}:state') == b'stopped':
+                    job.status = 'failed'
+                    job.result = 'Job stopped by user.'
+                    db.session.commit()
+                    return
                 processed_links.add(href)
                 try:
                     driver.get(href)
@@ -882,6 +898,28 @@ def whatsapp_bot_result(task_id):
         return jsonify({'error': 'No result'}), 404
     result_csv = result_csv.decode()
     return send_file(result_csv, as_attachment=True)
+
+@app.route('/api/job/<int:job_id>/pause', methods=['POST'])
+@login_required
+def pause_job(job_id):
+    job = ScrapingJob.query.get_or_404(job_id)
+    if job.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    redis_client.set(f'job:{job_id}:state', 'paused')
+    job.status = 'paused'
+    db.session.commit()
+    return jsonify({'status': 'paused'})
+
+@app.route('/api/job/<int:job_id>/stop', methods=['POST'])
+@login_required
+def stop_job(job_id):
+    job = ScrapingJob.query.get_or_404(job_id)
+    if job.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    redis_client.set(f'job:{job_id}:state', 'stopped')
+    job.status = 'failed'
+    db.session.commit()
+    return jsonify({'status': 'stopped'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True) 
